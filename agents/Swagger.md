@@ -1,0 +1,2 @@
+WE are developing an OpenAPI spec from a UML model described formally in Mermaid syntax.
+I want a OpenAPI spec that takes care of the CRUD operations and identifies functions that are not naturally applied to a resource/entity.

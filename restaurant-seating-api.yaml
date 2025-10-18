@@ -1,0 +1,2197 @@
+openapi: 3.0.3
+info:
+  title: Restaurant Seating System API
+  description: |
+    API for managing restaurant seating, reservations, and table assignments.
+    This API provides comprehensive CRUD operations for all entities in the restaurant seating system,
+    with complex business operations centralized under the Restaurant resource.
+  version: 1.0.0
+  contact:
+    name: Restaurant Seating System Team
+    email: api@restaurant-seating.com
+
+servers:
+  - url: https://api.restaurant-seating.com/v1
+    description: Production server
+  - url: https://staging-api.restaurant-seating.com/v1
+    description: Staging server
+
+paths:
+  # Restaurant resource with complex operations
+  /restaurants:
+    get:
+      summary: List all restaurants
+      description: Retrieve a list of all restaurants
+      operationId: listRestaurants
+      tags:
+        - Restaurants
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of restaurants to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: Number of restaurants to skip
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of restaurants
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  restaurants:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Restaurant'
+                  total:
+                    type: integer
+                    description: Total number of restaurants
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+
+    post:
+      summary: Create a new restaurant
+      description: Create a new restaurant with basic information
+      operationId: createRestaurant
+      tags:
+        - Restaurants
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestaurantCreate'
+      responses:
+        '201':
+          description: Restaurant created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /restaurants/{restaurantId}:
+    get:
+      summary: Get restaurant by ID
+      description: Retrieve a specific restaurant by its ID
+      operationId: getRestaurant
+      tags:
+        - Restaurants
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          description: Unique identifier for the restaurant
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Restaurant details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+        '404':
+          description: Restaurant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update restaurant
+      description: Update an existing restaurant
+      operationId: updateRestaurant
+      tags:
+        - Restaurants
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          description: Unique identifier for the restaurant
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestaurantUpdate'
+      responses:
+        '200':
+          description: Restaurant updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Restaurant'
+        '404':
+          description: Restaurant not found
+        '400':
+          description: Invalid input data
+
+    delete:
+      summary: Delete restaurant
+      description: Delete a restaurant and all associated data
+      operationId: deleteRestaurant
+      tags:
+        - Restaurants
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          description: Unique identifier for the restaurant
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Restaurant deleted successfully
+        '404':
+          description: Restaurant not found
+
+  # Complex Restaurant Operations
+  /restaurants/{restaurantId}/seating/assign-table:
+    post:
+      summary: Assign table to party
+      description: Assign an available table to a party (walk-in or reservation)
+      operationId: assignTableToParty
+      tags:
+        - Restaurants
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          description: Unique identifier for the restaurant
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tableId
+                - partyId
+                - serverId
+              properties:
+                tableId:
+                  type: string
+                  description: ID of the table to assign
+                partyId:
+                  type: string
+                  description: ID of the party to seat
+                serverId:
+                  type: string
+                  description: ID of the server managing the table
+                notes:
+                  type: string
+                  description: Additional notes for the assignment
+      responses:
+        '201':
+          description: Table assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableAssignment'
+        '400':
+          description: Invalid assignment request
+        '404':
+          description: Restaurant, table, party, or server not found
+        '409':
+          description: Table is not available or party is already seated
+
+  /restaurants/{restaurantId}/seating/check-availability:
+    get:
+      summary: Check table availability
+      description: Check available tables for a given time and party size
+      operationId: checkTableAvailability
+      tags:
+        - Restaurants
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          description: Unique identifier for the restaurant
+          schema:
+            type: string
+        - name: dateTime
+          in: query
+          required: true
+          description: Date and time to check availability
+          schema:
+            type: string
+            format: date-time
+        - name: partySize
+          in: query
+          required: true
+          description: Number of people in the party
+          schema:
+            type: integer
+            minimum: 1
+        - name: duration
+          in: query
+          required: false
+          description: Expected dining duration in minutes
+          schema:
+            type: integer
+            minimum: 30
+            default: 120
+      responses:
+        '200':
+          description: Available tables
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  availableTables:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Table'
+                  estimatedWaitTime:
+                    type: integer
+                    description: Estimated wait time in minutes if no tables available
+
+  /restaurants/{restaurantId}/reservations/create:
+    post:
+      summary: Create reservation
+      description: Create a new reservation for the restaurant
+      operationId: createReservation
+      tags:
+        - Restaurants
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          description: Unique identifier for the restaurant
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationCreate'
+      responses:
+        '201':
+          description: Reservation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '400':
+          description: Invalid reservation data
+        '409':
+          description: No available tables for requested time
+
+  /restaurants/{restaurantId}/waiting-list/add:
+    post:
+      summary: Add party to waiting list
+      description: Add a party to the restaurant's waiting list
+      operationId: addToWaitingList
+      tags:
+        - Restaurants
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          description: Unique identifier for the restaurant
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WaitingListCreate'
+      responses:
+        '201':
+          description: Party added to waiting list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitingList'
+        '400':
+          description: Invalid waiting list data
+
+  /restaurants/{restaurantId}/waiting-list/next:
+    get:
+      summary: Get next party from waiting list
+      description: Retrieve the next party in the waiting list
+      operationId: getNextWaitingParty
+      tags:
+        - Restaurants
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          description: Unique identifier for the restaurant
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Next party in waiting list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitingList'
+        '404':
+          description: No parties in waiting list
+
+  /restaurants/{restaurantId}/seating/complete-assignment:
+    put:
+      summary: Complete table assignment
+      description: Mark a table assignment as completed (party finished dining)
+      operationId: completeTableAssignment
+      tags:
+        - Restaurants
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          description: Unique identifier for the restaurant
+          schema:
+            type: string
+        - name: assignmentId
+          in: query
+          required: true
+          description: ID of the assignment to complete
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Assignment completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableAssignment'
+        '404':
+          description: Assignment not found
+        '400':
+          description: Assignment already completed
+
+  /restaurants/{restaurantId}/analytics/occupancy:
+    get:
+      summary: Get occupancy analytics
+      description: Get current and historical occupancy data for the restaurant
+      operationId: getOccupancyAnalytics
+      tags:
+        - Restaurants
+      parameters:
+        - name: restaurantId
+          in: path
+          required: true
+          description: Unique identifier for the restaurant
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          required: false
+          description: Start date for analytics (ISO 8601)
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: false
+          description: End date for analytics (ISO 8601)
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Occupancy analytics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  currentOccupancy:
+                    type: number
+                    description: Current occupancy percentage
+                  averageOccupancy:
+                    type: number
+                    description: Average occupancy for the period
+                  peakHours:
+                    type: array
+                    items:
+                      type: string
+                      format: time
+                  totalTables:
+                    type: integer
+                  occupiedTables:
+                    type: integer
+
+  # Sections CRUD
+  /sections:
+    get:
+      summary: List all sections
+      operationId: listSections
+      tags:
+        - Sections
+      parameters:
+        - name: restaurantId
+          in: query
+          required: false
+          description: Filter sections by restaurant ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of sections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Section'
+
+    post:
+      summary: Create a new section
+      operationId: createSection
+      tags:
+        - Sections
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SectionCreate'
+      responses:
+        '201':
+          description: Section created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Section'
+
+  /sections/{sectionId}:
+    get:
+      summary: Get section by ID
+      operationId: getSection
+      tags:
+        - Sections
+      parameters:
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Section details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Section'
+
+    put:
+      summary: Update section
+      operationId: updateSection
+      tags:
+        - Sections
+      parameters:
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SectionUpdate'
+      responses:
+        '200':
+          description: Section updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Section'
+
+    delete:
+      summary: Delete section
+      operationId: deleteSection
+      tags:
+        - Sections
+      parameters:
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Section deleted successfully
+
+  # Tables CRUD
+  /tables:
+    get:
+      summary: List all tables
+      operationId: listTables
+      tags:
+        - Tables
+      parameters:
+        - name: restaurantId
+          in: query
+          required: false
+          description: Filter tables by restaurant ID
+          schema:
+            type: string
+        - name: sectionId
+          in: query
+          required: false
+          description: Filter tables by section ID
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: Filter tables by status
+          schema:
+            $ref: '#/components/schemas/TableStatus'
+      responses:
+        '200':
+          description: List of tables
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Table'
+
+    post:
+      summary: Create a new table
+      operationId: createTable
+      tags:
+        - Tables
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableCreate'
+      responses:
+        '201':
+          description: Table created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+
+  /tables/{tableId}:
+    get:
+      summary: Get table by ID
+      operationId: getTable
+      tags:
+        - Tables
+      parameters:
+        - name: tableId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Table details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+
+    put:
+      summary: Update table
+      operationId: updateTable
+      tags:
+        - Tables
+      parameters:
+        - name: tableId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableUpdate'
+      responses:
+        '200':
+          description: Table updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Table'
+
+    delete:
+      summary: Delete table
+      operationId: deleteTable
+      tags:
+        - Tables
+      parameters:
+        - name: tableId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Table deleted successfully
+
+  # Parties CRUD
+  /parties:
+    get:
+      summary: List all parties
+      operationId: listParties
+      tags:
+        - Parties
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter parties by status
+          schema:
+            $ref: '#/components/schemas/PartyStatus'
+      responses:
+        '200':
+          description: List of parties
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Party'
+
+    post:
+      summary: Create a new party
+      operationId: createParty
+      tags:
+        - Parties
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyCreate'
+      responses:
+        '201':
+          description: Party created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+
+  /parties/{partyId}:
+    get:
+      summary: Get party by ID
+      operationId: getParty
+      tags:
+        - Parties
+      parameters:
+        - name: partyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Party details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+
+    put:
+      summary: Update party
+      operationId: updateParty
+      tags:
+        - Parties
+      parameters:
+        - name: partyId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartyUpdate'
+      responses:
+        '200':
+          description: Party updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+
+    delete:
+      summary: Delete party
+      operationId: deleteParty
+      tags:
+        - Parties
+      parameters:
+        - name: partyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Party deleted successfully
+
+  # Reservations CRUD
+  /reservations:
+    get:
+      summary: List all reservations
+      operationId: listReservations
+      tags:
+        - Reservations
+      parameters:
+        - name: restaurantId
+          in: query
+          required: false
+          description: Filter reservations by restaurant ID
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: Filter reservations by status
+          schema:
+            $ref: '#/components/schemas/ReservationStatus'
+        - name: date
+          in: query
+          required: false
+          description: Filter reservations by date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of reservations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reservation'
+
+    post:
+      summary: Create a new reservation
+      operationId: createReservation
+      tags:
+        - Reservations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationCreate'
+      responses:
+        '201':
+          description: Reservation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+
+  /reservations/{reservationId}:
+    get:
+      summary: Get reservation by ID
+      operationId: getReservation
+      tags:
+        - Reservations
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reservation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+
+    put:
+      summary: Update reservation
+      operationId: updateReservation
+      tags:
+        - Reservations
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationUpdate'
+      responses:
+        '200':
+          description: Reservation updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+
+    delete:
+      summary: Cancel reservation
+      operationId: cancelReservation
+      tags:
+        - Reservations
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reservation cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+
+  # Waiting List CRUD
+  /waiting-list:
+    get:
+      summary: List all waiting list entries
+      operationId: listWaitingList
+      tags:
+        - Waiting List
+      parameters:
+        - name: restaurantId
+          in: query
+          required: false
+          description: Filter waiting list by restaurant ID
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: Filter waiting list by status
+          schema:
+            $ref: '#/components/schemas/WaitingListStatus'
+      responses:
+        '200':
+          description: List of waiting list entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WaitingList'
+
+    post:
+      summary: Add entry to waiting list
+      operationId: addToWaitingList
+      tags:
+        - Waiting List
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WaitingListCreate'
+      responses:
+        '201':
+          description: Entry added to waiting list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitingList'
+
+  /waiting-list/{waitingListId}:
+    get:
+      summary: Get waiting list entry by ID
+      operationId: getWaitingListEntry
+      tags:
+        - Waiting List
+      parameters:
+        - name: waitingListId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Waiting list entry details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitingList'
+
+    put:
+      summary: Update waiting list entry
+      operationId: updateWaitingListEntry
+      tags:
+        - Waiting List
+      parameters:
+        - name: waitingListId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WaitingListUpdate'
+      responses:
+        '200':
+          description: Waiting list entry updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaitingList'
+
+    delete:
+      summary: Remove from waiting list
+      operationId: removeFromWaitingList
+      tags:
+        - Waiting List
+      parameters:
+        - name: waitingListId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Entry removed from waiting list
+
+  # Servers CRUD
+  /servers:
+    get:
+      summary: List all servers
+      operationId: listServers
+      tags:
+        - Servers
+      parameters:
+        - name: restaurantId
+          in: query
+          required: false
+          description: Filter servers by restaurant ID
+          schema:
+            type: string
+        - name: isActive
+          in: query
+          required: false
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of servers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Server'
+
+    post:
+      summary: Create a new server
+      operationId: createServer
+      tags:
+        - Servers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServerCreate'
+      responses:
+        '201':
+          description: Server created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+
+  /servers/{serverId}:
+    get:
+      summary: Get server by ID
+      operationId: getServer
+      tags:
+        - Servers
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Server details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+
+    put:
+      summary: Update server
+      operationId: updateServer
+      tags:
+        - Servers
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServerUpdate'
+      responses:
+        '200':
+          description: Server updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Server'
+
+    delete:
+      summary: Delete server
+      operationId: deleteServer
+      tags:
+        - Servers
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Server deleted successfully
+
+  # Table Assignments CRUD
+  /table-assignments:
+    get:
+      summary: List all table assignments
+      operationId: listTableAssignments
+      tags:
+        - Table Assignments
+      parameters:
+        - name: tableId
+          in: query
+          required: false
+          description: Filter assignments by table ID
+          schema:
+            type: string
+        - name: partyId
+          in: query
+          required: false
+          description: Filter assignments by party ID
+          schema:
+            type: string
+        - name: serverId
+          in: query
+          required: false
+          description: Filter assignments by server ID
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: Filter assignments by status
+          schema:
+            $ref: '#/components/schemas/AssignmentStatus'
+      responses:
+        '200':
+          description: List of table assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TableAssignment'
+
+    post:
+      summary: Create a new table assignment
+      operationId: createTableAssignment
+      tags:
+        - Table Assignments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableAssignmentCreate'
+      responses:
+        '201':
+          description: Table assignment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableAssignment'
+
+  /table-assignments/{assignmentId}:
+    get:
+      summary: Get table assignment by ID
+      operationId: getTableAssignment
+      tags:
+        - Table Assignments
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Table assignment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableAssignment'
+
+    put:
+      summary: Update table assignment
+      operationId: updateTableAssignment
+      tags:
+        - Table Assignments
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableAssignmentUpdate'
+      responses:
+        '200':
+          description: Table assignment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TableAssignment'
+
+    delete:
+      summary: Delete table assignment
+      operationId: deleteTableAssignment
+      tags:
+        - Table Assignments
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Table assignment deleted successfully
+
+  # Reservation Assignments CRUD
+  /reservation-assignments:
+    get:
+      summary: List all reservation assignments
+      operationId: listReservationAssignments
+      tags:
+        - Reservation Assignments
+      parameters:
+        - name: reservationId
+          in: query
+          required: false
+          description: Filter assignments by reservation ID
+          schema:
+            type: string
+        - name: tableId
+          in: query
+          required: false
+          description: Filter assignments by table ID
+          schema:
+            type: string
+        - name: serverId
+          in: query
+          required: false
+          description: Filter assignments by server ID
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: Filter assignments by status
+          schema:
+            $ref: '#/components/schemas/AssignmentStatus'
+      responses:
+        '200':
+          description: List of reservation assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReservationAssignment'
+
+    post:
+      summary: Create a new reservation assignment
+      operationId: createReservationAssignment
+      tags:
+        - Reservation Assignments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationAssignmentCreate'
+      responses:
+        '201':
+          description: Reservation assignment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationAssignment'
+
+  /reservation-assignments/{assignmentId}:
+    get:
+      summary: Get reservation assignment by ID
+      operationId: getReservationAssignment
+      tags:
+        - Reservation Assignments
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Reservation assignment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationAssignment'
+
+    put:
+      summary: Update reservation assignment
+      operationId: updateReservationAssignment
+      tags:
+        - Reservation Assignments
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationAssignmentUpdate'
+      responses:
+        '200':
+          description: Reservation assignment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationAssignment'
+
+    delete:
+      summary: Delete reservation assignment
+      operationId: deleteReservationAssignment
+      tags:
+        - Reservation Assignments
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Reservation assignment deleted successfully
+
+components:
+  schemas:
+    # Enums
+    TableStatus:
+      type: string
+      enum:
+        - AVAILABLE
+        - OCCUPIED
+        - RESERVED
+        - OUT_OF_ORDER
+        - CLEANING
+
+    PartyStatus:
+      type: string
+      enum:
+        - WAITING
+        - SEATED
+        - FINISHED
+        - CANCELLED
+
+    ReservationStatus:
+      type: string
+      enum:
+        - CONFIRMED
+        - PENDING
+        - CANCELLED
+        - COMPLETED
+        - NO_SHOW
+
+    WaitingListStatus:
+      type: string
+      enum:
+        - WAITING
+        - SEATED
+        - CANCELLED
+        - EXPIRED
+
+    AssignmentStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - CANCELLED
+
+    # Core Entities
+    Restaurant:
+      type: object
+      required:
+        - id
+        - name
+        - address
+        - phone
+        - openingTime
+        - closingTime
+        - maxCapacity
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the restaurant
+        name:
+          type: string
+          description: Name of the restaurant
+        address:
+          type: string
+          description: Physical address of the restaurant
+        phone:
+          type: string
+          description: Contact phone number
+        openingTime:
+          type: string
+          format: time
+          description: Daily opening time
+        closingTime:
+          type: string
+          format: time
+          description: Daily closing time
+        maxCapacity:
+          type: integer
+          minimum: 1
+          description: Maximum total capacity of the restaurant
+
+    RestaurantCreate:
+      type: object
+      required:
+        - name
+        - address
+        - phone
+        - openingTime
+        - closingTime
+        - maxCapacity
+      properties:
+        name:
+          type: string
+          description: Name of the restaurant
+        address:
+          type: string
+          description: Physical address of the restaurant
+        phone:
+          type: string
+          description: Contact phone number
+        openingTime:
+          type: string
+          format: time
+          description: Daily opening time
+        closingTime:
+          type: string
+          format: time
+          description: Daily closing time
+        maxCapacity:
+          type: integer
+          minimum: 1
+          description: Maximum total capacity of the restaurant
+
+    RestaurantUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the restaurant
+        address:
+          type: string
+          description: Physical address of the restaurant
+        phone:
+          type: string
+          description: Contact phone number
+        openingTime:
+          type: string
+          format: time
+          description: Daily opening time
+        closingTime:
+          type: string
+          format: time
+          description: Daily closing time
+        maxCapacity:
+          type: integer
+          minimum: 1
+          description: Maximum total capacity of the restaurant
+
+    Section:
+      type: object
+      required:
+        - id
+        - name
+        - capacity
+        - isActive
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the section
+        name:
+          type: string
+          description: Name of the section
+        description:
+          type: string
+          description: Description of the section
+        capacity:
+          type: integer
+          minimum: 1
+          description: Maximum capacity of the section
+        isActive:
+          type: boolean
+          description: Whether the section is currently active
+        restaurantId:
+          type: string
+          description: ID of the restaurant this section belongs to
+
+    SectionCreate:
+      type: object
+      required:
+        - name
+        - capacity
+        - restaurantId
+      properties:
+        name:
+          type: string
+          description: Name of the section
+        description:
+          type: string
+          description: Description of the section
+        capacity:
+          type: integer
+          minimum: 1
+          description: Maximum capacity of the section
+        isActive:
+          type: boolean
+          default: true
+          description: Whether the section is currently active
+        restaurantId:
+          type: string
+          description: ID of the restaurant this section belongs to
+
+    SectionUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the section
+        description:
+          type: string
+          description: Description of the section
+        capacity:
+          type: integer
+          minimum: 1
+          description: Maximum capacity of the section
+        isActive:
+          type: boolean
+          description: Whether the section is currently active
+
+    Table:
+      type: object
+      required:
+        - id
+        - tableNumber
+        - capacity
+        - location
+        - isActive
+        - status
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the table
+        tableNumber:
+          type: string
+          description: Human-readable table number
+        capacity:
+          type: integer
+          minimum: 1
+          description: Maximum number of people the table can seat
+        location:
+          type: string
+          description: Physical location description of the table
+        isActive:
+          type: boolean
+          description: Whether the table is currently active
+        status:
+          $ref: '#/components/schemas/TableStatus'
+        restaurantId:
+          type: string
+          description: ID of the restaurant this table belongs to
+        sectionIds:
+          type: array
+          items:
+            type: string
+          description: IDs of sections this table belongs to
+
+    TableCreate:
+      type: object
+      required:
+        - tableNumber
+        - capacity
+        - location
+        - restaurantId
+      properties:
+        tableNumber:
+          type: string
+          description: Human-readable table number
+        capacity:
+          type: integer
+          minimum: 1
+          description: Maximum number of people the table can seat
+        location:
+          type: string
+          description: Physical location description of the table
+        isActive:
+          type: boolean
+          default: true
+          description: Whether the table is currently active
+        status:
+          $ref: '#/components/schemas/TableStatus'
+          default: AVAILABLE
+        restaurantId:
+          type: string
+          description: ID of the restaurant this table belongs to
+        sectionIds:
+          type: array
+          items:
+            type: string
+          description: IDs of sections this table belongs to
+
+    TableUpdate:
+      type: object
+      properties:
+        tableNumber:
+          type: string
+          description: Human-readable table number
+        capacity:
+          type: integer
+          minimum: 1
+          description: Maximum number of people the table can seat
+        location:
+          type: string
+          description: Physical location description of the table
+        isActive:
+          type: boolean
+          description: Whether the table is currently active
+        status:
+          $ref: '#/components/schemas/TableStatus'
+        sectionIds:
+          type: array
+          items:
+            type: string
+          description: IDs of sections this table belongs to
+
+    Party:
+      type: object
+      required:
+        - id
+        - name
+        - size
+        - status
+        - arrivalTime
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the party
+        name:
+          type: string
+          description: Name of the party (e.g., "Smith Party")
+        size:
+          type: integer
+          minimum: 1
+          description: Number of people in the party
+        phone:
+          type: string
+          description: Contact phone number for the party
+        email:
+          type: string
+          format: email
+          description: Contact email for the party
+        status:
+          $ref: '#/components/schemas/PartyStatus'
+        arrivalTime:
+          type: string
+          format: date-time
+          description: When the party arrived
+
+    PartyCreate:
+      type: object
+      required:
+        - name
+        - size
+      properties:
+        name:
+          type: string
+          description: Name of the party (e.g., "Smith Party")
+        size:
+          type: integer
+          minimum: 1
+          description: Number of people in the party
+        phone:
+          type: string
+          description: Contact phone number for the party
+        email:
+          type: string
+          format: email
+          description: Contact email for the party
+        status:
+          $ref: '#/components/schemas/PartyStatus'
+          default: WAITING
+        arrivalTime:
+          type: string
+          format: date-time
+          description: When the party arrived
+
+    PartyUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the party (e.g., "Smith Party")
+        size:
+          type: integer
+          minimum: 1
+          description: Number of people in the party
+        phone:
+          type: string
+          description: Contact phone number for the party
+        email:
+          type: string
+          format: email
+          description: Contact email for the party
+        status:
+          $ref: '#/components/schemas/PartyStatus'
+        arrivalTime:
+          type: string
+          format: date-time
+          description: When the party arrived
+
+    Reservation:
+      type: object
+      required:
+        - id
+        - reservationTime
+        - partySize
+        - customerName
+        - customerPhone
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the reservation
+        reservationTime:
+          type: string
+          format: date-time
+          description: Scheduled reservation time
+        partySize:
+          type: integer
+          minimum: 1
+          description: Number of people in the party
+        customerName:
+          type: string
+          description: Name of the customer making the reservation
+        customerPhone:
+          type: string
+          description: Phone number of the customer
+        customerEmail:
+          type: string
+          format: email
+          description: Email address of the customer
+        specialRequests:
+          type: string
+          description: Any special requests or notes
+        status:
+          $ref: '#/components/schemas/ReservationStatus'
+        createdAt:
+          type: string
+          format: date-time
+          description: When the reservation was created
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the reservation was last updated
+        restaurantId:
+          type: string
+          description: ID of the restaurant
+        partyId:
+          type: string
+          description: ID of the associated party
+
+    ReservationCreate:
+      type: object
+      required:
+        - reservationTime
+        - partySize
+        - customerName
+        - customerPhone
+        - restaurantId
+      properties:
+        reservationTime:
+          type: string
+          format: date-time
+          description: Scheduled reservation time
+        partySize:
+          type: integer
+          minimum: 1
+          description: Number of people in the party
+        customerName:
+          type: string
+          description: Name of the customer making the reservation
+        customerPhone:
+          type: string
+          description: Phone number of the customer
+        customerEmail:
+          type: string
+          format: email
+          description: Email address of the customer
+        specialRequests:
+          type: string
+          description: Any special requests or notes
+        restaurantId:
+          type: string
+          description: ID of the restaurant
+
+    ReservationUpdate:
+      type: object
+      properties:
+        reservationTime:
+          type: string
+          format: date-time
+          description: Scheduled reservation time
+        partySize:
+          type: integer
+          minimum: 1
+          description: Number of people in the party
+        customerName:
+          type: string
+          description: Name of the customer making the reservation
+        customerPhone:
+          type: string
+          description: Phone number of the customer
+        customerEmail:
+          type: string
+          format: email
+          description: Email address of the customer
+        specialRequests:
+          type: string
+          description: Any special requests or notes
+        status:
+          $ref: '#/components/schemas/ReservationStatus'
+
+    WaitingList:
+      type: object
+      required:
+        - id
+        - customerName
+        - customerPhone
+        - partySize
+        - requestTime
+        - status
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the waiting list entry
+        customerName:
+          type: string
+          description: Name of the customer
+        customerPhone:
+          type: string
+          description: Phone number of the customer
+        partySize:
+          type: integer
+          minimum: 1
+          description: Number of people in the party
+        requestTime:
+          type: string
+          format: date-time
+          description: When the customer requested to be added to waiting list
+        estimatedWaitTime:
+          type: integer
+          minimum: 0
+          description: Estimated wait time in minutes
+        status:
+          $ref: '#/components/schemas/WaitingListStatus'
+        notes:
+          type: string
+          description: Additional notes about the waiting list entry
+        restaurantId:
+          type: string
+          description: ID of the restaurant
+
+    WaitingListCreate:
+      type: object
+      required:
+        - customerName
+        - customerPhone
+        - partySize
+        - restaurantId
+      properties:
+        customerName:
+          type: string
+          description: Name of the customer
+        customerPhone:
+          type: string
+          description: Phone number of the customer
+        partySize:
+          type: integer
+          minimum: 1
+          description: Number of people in the party
+        estimatedWaitTime:
+          type: integer
+          minimum: 0
+          description: Estimated wait time in minutes
+        notes:
+          type: string
+          description: Additional notes about the waiting list entry
+        restaurantId:
+          type: string
+          description: ID of the restaurant
+
+    WaitingListUpdate:
+      type: object
+      properties:
+        customerName:
+          type: string
+          description: Name of the customer
+        customerPhone:
+          type: string
+          description: Phone number of the customer
+        partySize:
+          type: integer
+          minimum: 1
+          description: Number of people in the party
+        estimatedWaitTime:
+          type: integer
+          minimum: 0
+          description: Estimated wait time in minutes
+        status:
+          $ref: '#/components/schemas/WaitingListStatus'
+        notes:
+          type: string
+          description: Additional notes about the waiting list entry
+
+    Server:
+      type: object
+      required:
+        - id
+        - firstName
+        - lastName
+        - employeeId
+        - isActive
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the server
+        firstName:
+          type: string
+          description: First name of the server
+        lastName:
+          type: string
+          description: Last name of the server
+        employeeId:
+          type: string
+          description: Employee ID number
+        isActive:
+          type: boolean
+          description: Whether the server is currently active
+        shiftStart:
+          type: string
+          format: date-time
+          description: Start time of current shift
+        shiftEnd:
+          type: string
+          format: date-time
+          description: End time of current shift
+        restaurantId:
+          type: string
+          description: ID of the restaurant this server works for
+
+    ServerCreate:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - employeeId
+        - restaurantId
+      properties:
+        firstName:
+          type: string
+          description: First name of the server
+        lastName:
+          type: string
+          description: Last name of the server
+        employeeId:
+          type: string
+          description: Employee ID number
+        isActive:
+          type: boolean
+          default: true
+          description: Whether the server is currently active
+        shiftStart:
+          type: string
+          format: date-time
+          description: Start time of current shift
+        shiftEnd:
+          type: string
+          format: date-time
+          description: End time of current shift
+        restaurantId:
+          type: string
+          description: ID of the restaurant this server works for
+
+    ServerUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: First name of the server
+        lastName:
+          type: string
+          description: Last name of the server
+        employeeId:
+          type: string
+          description: Employee ID number
+        isActive:
+          type: boolean
+          description: Whether the server is currently active
+        shiftStart:
+          type: string
+          format: date-time
+          description: Start time of current shift
+        shiftEnd:
+          type: string
+          format: date-time
+          description: End time of current shift
+
+    TableAssignment:
+      type: object
+      required:
+        - id
+        - assignedAt
+        - status
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the assignment
+        assignedAt:
+          type: string
+          format: date-time
+          description: When the assignment was made
+        completedAt:
+          type: string
+          format: date-time
+          description: When the assignment was completed
+        status:
+          $ref: '#/components/schemas/AssignmentStatus'
+        tableId:
+          type: string
+          description: ID of the assigned table
+        partyId:
+          type: string
+          description: ID of the assigned party
+        serverId:
+          type: string
+          description: ID of the managing server
+        notes:
+          type: string
+          description: Additional notes about the assignment
+
+    TableAssignmentCreate:
+      type: object
+      required:
+        - tableId
+        - partyId
+        - serverId
+      properties:
+        tableId:
+          type: string
+          description: ID of the assigned table
+        partyId:
+          type: string
+          description: ID of the assigned party
+        serverId:
+          type: string
+          description: ID of the managing server
+        notes:
+          type: string
+          description: Additional notes about the assignment
+
+    TableAssignmentUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/AssignmentStatus'
+        completedAt:
+          type: string
+          format: date-time
+          description: When the assignment was completed
+        notes:
+          type: string
+          description: Additional notes about the assignment
+
+    ReservationAssignment:
+      type: object
+      required:
+        - id
+        - assignedAt
+        - status
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the assignment
+        assignedAt:
+          type: string
+          format: date-time
+          description: When the assignment was made
+        completedAt:
+          type: string
+          format: date-time
+          description: When the assignment was completed
+        status:
+          $ref: '#/components/schemas/AssignmentStatus'
+        reservationId:
+          type: string
+          description: ID of the assigned reservation
+        tableId:
+          type: string
+          description: ID of the assigned table
+        serverId:
+          type: string
+          description: ID of the managing server
+        notes:
+          type: string
+          description: Additional notes about the assignment
+
+    ReservationAssignmentCreate:
+      type: object
+      required:
+        - reservationId
+        - tableId
+        - serverId
+      properties:
+        reservationId:
+          type: string
+          description: ID of the assigned reservation
+        tableId:
+          type: string
+          description: ID of the assigned table
+        serverId:
+          type: string
+          description: ID of the managing server
+        notes:
+          type: string
+          description: Additional notes about the assignment
+
+    ReservationAssignmentUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/AssignmentStatus'
+        completedAt:
+          type: string
+          format: date-time
+          description: When the assignment was completed
+        notes:
+          type: string
+          description: Additional notes about the assignment
+
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          description: Additional error details
+
+tags:
+  - name: Restaurants
+    description: Restaurant management and complex seating operations
+  - name: Sections
+    description: Restaurant section management
+  - name: Tables
+    description: Table management
+  - name: Parties
+    description: Customer party management
+  - name: Reservations
+    description: Reservation management
+  - name: Waiting List
+    description: Waiting list management
+  - name: Servers
+    description: Server/staff management
+  - name: Table Assignments
+    description: Table assignment management
+  - name: Reservation Assignments
+    description: Reservation assignment management
