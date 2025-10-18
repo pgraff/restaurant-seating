@@ -11,11 +11,26 @@ install-dev: ## Install development dependencies
 	pip install -r requirements-dev.txt
 	pre-commit install
 
-test: ## Run tests
-	pytest
+test: ## Run all tests
+	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/ -v
+
+test-unit: ## Run unit tests only
+	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/test_models.py ../tests/test_services.py -v
+
+test-api: ## Run API tests only
+	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/test_api.py -v
+
+test-complex: ## Run complex operations tests
+	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/test_complex_operations.py -v
 
 test-cov: ## Run tests with coverage
-	pytest --cov=backend --cov=app --cov-report=html --cov-report=term
+	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/ --cov=app --cov-report=html --cov-report=term
+
+test-fast: ## Run fast tests (exclude slow tests)
+	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/ -m "not slow" -v
+
+test-watch: ## Run tests in watch mode
+	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/ -f -v
 
 lint: ## Run linting
 	flake8 backend/ app/
@@ -42,6 +57,19 @@ run: ## Run the application
 
 dev: ## Run the application in development mode
 	cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+frontend: ## Run the Streamlit frontend
+	cd frontend && streamlit run streamlit_app.py --server.port=8501 --server.address=0.0.0.0
+
+dev-full: ## Run both backend and frontend in development mode
+	@echo "Starting backend and frontend..."
+	@echo "Backend will be available at http://localhost:8000"
+	@echo "Frontend will be available at http://localhost:8501"
+	@echo "API docs will be available at http://localhost:8000/docs"
+	@echo "Press Ctrl+C to stop both services"
+	@trap 'kill %1; kill %2' INT; \
+	cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000 & \
+	cd frontend && streamlit run streamlit_app.py --server.port=8501 --server.address=0.0.0.0
 
 docs: ## Build documentation
 	mkdocs build
