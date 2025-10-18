@@ -11,6 +11,8 @@ info:
     email: api@restaurant-seating.com
 
 servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
   - url: https://api.restaurant-seating.com/v1
     description: Production server
   - url: https://staging-api.restaurant-seating.com/v1
