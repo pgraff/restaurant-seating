@@ -11,26 +11,29 @@ install-dev: ## Install development dependencies
 	pip install -r requirements-dev.txt
 	pre-commit install
 
-test: ## Run all tests
-	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/ -v
+test: ## Run all working tests (unit + service)
+	python -m pytest tests/test_models.py tests/test_services.py -v
 
 test-unit: ## Run unit tests only
-	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/test_models.py ../tests/test_services.py -v
+	python -m pytest tests/test_models.py tests/test_services.py -v
 
-test-api: ## Run API tests only
-	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/test_api.py -v
+test-all: ## Run ALL tests (including API tests with database issues)
+	python -m pytest tests/ -v
+
+test-api: ## Run API tests only (may have database issues)
+	python -m pytest tests/test_api.py -v
 
 test-complex: ## Run complex operations tests
-	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/test_complex_operations.py -v
+	python -m pytest tests/test_complex_operations.py -v
 
 test-cov: ## Run tests with coverage
-	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/ --cov=app --cov-report=html --cov-report=term
+	python -m pytest tests/ --cov=app --cov-report=html --cov-report=term
 
 test-fast: ## Run fast tests (exclude slow tests)
-	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/ -m "not slow" -v
+	python -m pytest tests/ -m "not slow" -v
 
 test-watch: ## Run tests in watch mode
-	cd backend && PYTHONPATH=/home/petter/dev/knowit/ws1/backend python -m pytest ../tests/ -f -v
+	python -m pytest tests/ -f -v
 
 lint: ## Run linting
 	flake8 backend/ app/

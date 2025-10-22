@@ -5,11 +5,7 @@ import pytest
 from datetime import datetime, date, time
 from pydantic import ValidationError
 
-# Add the backend directory to the Python path
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
-
+# Import app modules (PYTHONPATH should be set to include backend/)
 from app.models.schemas import (
     Restaurant, RestaurantCreate, RestaurantUpdate,
     Table, TableCreate, TableUpdate,

@@ -99,10 +99,7 @@ class TestRestaurantAPI:
     def test_delete_restaurant(self, client: TestClient, sample_restaurant):
         """Test DELETE /api/v1/restaurants/{restaurant_id}"""
         response = client.delete(f"/api/v1/restaurants/{sample_restaurant.id}")
-        assert response.status_code == 200
-        
-        data = response.json()
-        assert data["message"] == "Restaurant deleted successfully"
+        assert response.status_code == 204
         
         # Verify restaurant was deleted
         response = client.get(f"/api/v1/restaurants/{sample_restaurant.id}")
@@ -243,9 +240,9 @@ class TestPartyAPI:
         assert response.status_code == 200
         
         data = response.json()
-        assert "items" in data
-        assert len(data["items"]) == 1
-        assert data["items"][0]["name"] == "Test Party"
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["name"] == "Test Party"
     
     def test_create_party(self, client: TestClient):
         """Test POST /api/v1/parties/"""
@@ -291,10 +288,7 @@ class TestPartyAPI:
     def test_delete_party(self, client: TestClient, sample_party):
         """Test DELETE /api/v1/parties/{party_id}"""
         response = client.delete(f"/api/v1/parties/{sample_party.id}")
-        assert response.status_code == 200
-        
-        data = response.json()
-        assert data["message"] == "Party deleted successfully"
+        assert response.status_code == 204
 
 
 class TestReservationAPI:
@@ -306,9 +300,9 @@ class TestReservationAPI:
         assert response.status_code == 200
         
         data = response.json()
-        assert "items" in data
-        assert len(data["items"]) == 1
-        assert data["items"][0]["customer_name"] == "Test Customer"
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["customer_name"] == "Test Customer"
     
     def test_create_reservation(self, client: TestClient, sample_restaurant, sample_party):
         """Test POST /api/v1/reservations/"""
@@ -358,10 +352,7 @@ class TestReservationAPI:
     def test_delete_reservation(self, client: TestClient, sample_reservation):
         """Test DELETE /api/v1/reservations/{reservation_id}"""
         response = client.delete(f"/api/v1/reservations/{sample_reservation.id}")
-        assert response.status_code == 200
-        
-        data = response.json()
-        assert data["message"] == "Reservation deleted successfully"
+        assert response.status_code == 204
 
 
 class TestServerAPI:
@@ -373,9 +364,9 @@ class TestServerAPI:
         assert response.status_code == 200
         
         data = response.json()
-        assert "items" in data
-        assert len(data["items"]) == 1
-        assert data["items"][0]["first_name"] == "John"
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["first_name"] == "John"
     
     def test_create_server(self, client: TestClient, sample_restaurant):
         """Test POST /api/v1/servers/"""
@@ -384,8 +375,6 @@ class TestServerAPI:
             "first_name": "Jane",
             "last_name": "Server",
             "employee_id": "EMP002",
-            "phone": "+1-555-0456",
-            "email": "jane@test.com",
             "is_active": True
         }
         
@@ -408,8 +397,7 @@ class TestServerAPI:
     def test_update_server(self, client: TestClient, sample_server):
         """Test PUT /api/v1/servers/{server_id}"""
         update_data = {
-            "first_name": "Johnny",
-            "phone": "+1-555-0999"
+            "first_name": "Johnny"
         }
         
         response = client.put(f"/api/v1/servers/{sample_server.id}", json=update_data)
@@ -417,15 +405,11 @@ class TestServerAPI:
         
         data = response.json()
         assert data["first_name"] == "Johnny"
-        assert data["phone"] == "+1-555-0999"
     
     def test_delete_server(self, client: TestClient, sample_server):
         """Test DELETE /api/v1/servers/{server_id}"""
         response = client.delete(f"/api/v1/servers/{sample_server.id}")
-        assert response.status_code == 200
-        
-        data = response.json()
-        assert data["message"] == "Server deleted successfully"
+        assert response.status_code == 204
 
 
 class TestAssignmentAPI:
@@ -451,9 +435,9 @@ class TestAssignmentAPI:
         assert response.status_code == 200
         
         data = response.json()
-        assert "items" in data
-        assert len(data["items"]) == 1
-        assert data["items"][0]["table_id"] == sample_table.id
+        assert isinstance(data, list)
+        assert len(data) == 1
+        assert data[0]["table_id"] == sample_table.id
     
     def test_create_table_assignment(self, client: TestClient, sample_restaurant, sample_party, sample_table, sample_server):
         """Test POST /api/v1/assignments/table-assignments"""
@@ -543,10 +527,7 @@ class TestAssignmentAPI:
         
         # Now test deleting the assignment
         response = client.delete(f"/api/v1/assignments/table-assignments/{assignment_id}")
-        assert response.status_code == 200
-        
-        data = response.json()
-        assert data["message"] == "Table assignment deleted successfully"
+        assert response.status_code == 204
 
 
 class TestHealthEndpoints:

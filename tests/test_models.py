@@ -2,6 +2,7 @@
 Unit tests for Pydantic models and SQLAlchemy models
 """
 import pytest
+import uuid
 from datetime import datetime, date, time
 from pydantic import ValidationError
 
@@ -125,19 +126,17 @@ class TestPydanticModels:
         """Test ReservationCreate model validation."""
         valid_data = {
             "restaurant_id": "123e4567-e89b-12d3-a456-426614174000",
-            "party_id": "123e4567-e89b-12d3-a456-426614174001",
             "reservation_time": datetime(2025, 10, 20, 19, 0, 0),
             "party_size": 4,
             "customer_name": "Test Customer",
             "customer_phone": "+1-555-0123",
             "customer_email": "test@example.com",
-            "status": "CONFIRMED",
             "special_requests": "Window table"
         }
         reservation = ReservationCreate(**valid_data)
         assert reservation.customer_name == "Test Customer"
         assert reservation.party_size == 4
-        assert reservation.status == ReservationStatus.CONFIRMED
+        assert reservation.restaurant_id == "123e4567-e89b-12d3-a456-426614174000"
     
     def test_server_create_validation(self):
         """Test ServerCreate model validation."""
@@ -162,12 +161,11 @@ class TestPydanticModels:
             "table_id": "123e4567-e89b-12d3-a456-426614174002",
             "party_id": "123e4567-e89b-12d3-a456-426614174001",
             "server_id": "123e4567-e89b-12d3-a456-426614174003",
-            "assigned_at": datetime(2025, 10, 20, 19, 0, 0),
-            "status": "ASSIGNED"
+            "assigned_at": datetime(2025, 10, 20, 19, 0, 0)
         }
         assignment = TableAssignmentCreate(**valid_data)
         assert assignment.table_id == "123e4567-e89b-12d3-a456-426614174002"
-        assert assignment.status == AssignmentStatus.ASSIGNED
+        assert assignment.party_id == "123e4567-e89b-12d3-a456-426614174001"
 
 
 class TestSQLAlchemyModels:
@@ -274,13 +272,14 @@ class TestSQLAlchemyModels:
     def test_server_model_creation(self, db_session, sample_restaurant):
         """Test Server model creation."""
         server = ServerModel(
+            id=str(uuid.uuid4()),
             restaurant_id=sample_restaurant.id,
             first_name="John",
             last_name="Server",
             employee_id="EMP001",
-            phone="+1-555-0199",
-            email="john@test.com",
-            is_active=True
+            is_active=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
         db_session.add(server)
         db_session.commit()
@@ -295,12 +294,14 @@ class TestSQLAlchemyModels:
     def test_table_assignment_model_creation(self, db_session, sample_restaurant, sample_party, sample_table, sample_server):
         """Test TableAssignment model creation."""
         assignment = TableAssignmentModel(
-            restaurant_id=sample_restaurant.id,
+            id=str(uuid.uuid4()),
             table_id=sample_table.id,
             party_id=sample_party.id,
             server_id=sample_server.id,
             assigned_at=datetime(2025, 10, 20, 19, 0, 0),
-            status="ASSIGNED"
+            status="ACTIVE",
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
         db_session.add(assignment)
         db_session.commit()
@@ -310,7 +311,7 @@ class TestSQLAlchemyModels:
         assert assignment.table_id == sample_table.id
         assert assignment.party_id == sample_party.id
         assert assignment.server_id == sample_server.id
-        assert assignment.status == "ASSIGNED"
+        assert assignment.status == "ACTIVE"
     
     def test_model_relationships(self, db_session, sample_restaurant, sample_section, sample_table):
         """Test model relationships."""

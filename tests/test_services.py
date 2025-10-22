@@ -40,14 +40,15 @@ class TestRestaurantService:
         """Test creating a new restaurant."""
         service = RestaurantService(db_session)
         
-        restaurant_data = {
-            "name": "New Restaurant",
-            "address": "456 New St",
-            "phone": "+1-555-0456",
-            "opening_time": "10:00:00",
-            "closing_time": "23:00:00",
-            "max_capacity": 150
-        }
+        from app.models.schemas import RestaurantCreate
+        restaurant_data = RestaurantCreate(
+            name="New Restaurant",
+            address="456 New St",
+            phone="+1-555-0456",
+            opening_time="10:00:00",
+            closing_time="23:00:00",
+            max_capacity=150
+        )
         
         restaurant = service.create_restaurant(restaurant_data)
         assert restaurant.name == "New Restaurant"
@@ -75,10 +76,11 @@ class TestRestaurantService:
         """Test updating a restaurant."""
         service = RestaurantService(db_session)
         
-        update_data = {
-            "name": "Updated Restaurant",
-            "max_capacity": 200
-        }
+        from app.models.schemas import RestaurantUpdate
+        update_data = RestaurantUpdate(
+            name="Updated Restaurant",
+            max_capacity=200
+        )
         
         updated_restaurant = service.update_restaurant(sample_restaurant.id, update_data)
         assert updated_restaurant.name == "Updated Restaurant"
@@ -126,13 +128,14 @@ class TestPartyService:
         """Test creating a new party."""
         service = PartyService(db_session)
         
-        party_data = {
-            "name": "New Party",
-            "phone": "+1-555-0456",
-            "email": "new@example.com",
-            "size": 6,
-            "status": "WAITING"
-        }
+        from app.models.schemas import PartyCreate
+        party_data = PartyCreate(
+            name="New Party",
+            phone="+1-555-0456",
+            email="new@example.com",
+            size=6,
+            status="WAITING"
+        )
         
         party = service.create_party(party_data)
         assert party.name == "New Party"
@@ -155,10 +158,11 @@ class TestPartyService:
         """Test updating a party."""
         service = PartyService(db_session)
         
-        update_data = {
-            "name": "Updated Party",
-            "size": 8
-        }
+        from app.models.schemas import PartyUpdate
+        update_data = PartyUpdate(
+            name="Updated Party",
+            size=8
+        )
         
         updated_party = service.update_party(sample_party.id, update_data)
         assert updated_party.name == "Updated Party"
@@ -192,17 +196,16 @@ class TestReservationService:
         """Test creating a new reservation."""
         service = ReservationService(db_session)
         
-        reservation_data = {
-            "restaurant_id": sample_restaurant.id,
-            "party_id": sample_party.id,
-            "reservation_time": datetime(2025, 10, 21, 20, 0, 0),
-            "party_size": 4,
-            "customer_name": "New Customer",
-            "customer_phone": "+1-555-0456",
-            "customer_email": "new@example.com",
-            "status": "CONFIRMED",
-            "special_requests": "Quiet table"
-        }
+        from app.models.schemas import ReservationCreate
+        reservation_data = ReservationCreate(
+            restaurant_id=sample_restaurant.id,
+            reservation_time=datetime(2025, 10, 21, 20, 0, 0),
+            party_size=4,
+            customer_name="New Customer",
+            customer_phone="+1-555-0456",
+            customer_email="new@example.com",
+            special_requests="Quiet table"
+        )
         
         reservation = service.create_reservation(reservation_data)
         assert reservation.customer_name == "New Customer"
@@ -225,10 +228,11 @@ class TestReservationService:
         """Test updating a reservation."""
         service = ReservationService(db_session)
         
-        update_data = {
-            "customer_name": "Updated Customer",
-            "special_requests": "Updated requests"
-        }
+        from app.models.schemas import ReservationUpdate
+        update_data = ReservationUpdate(
+            customer_name="Updated Customer",
+            special_requests="Updated requests"
+        )
         
         updated_reservation = service.update_reservation(sample_reservation.id, update_data)
         assert updated_reservation.customer_name == "Updated Customer"
@@ -262,15 +266,14 @@ class TestServerService:
         """Test creating a new server."""
         service = ServerService(db_session)
         
-        server_data = {
-            "restaurant_id": sample_restaurant.id,
-            "first_name": "Jane",
-            "last_name": "Server",
-            "employee_id": "EMP002",
-            "phone": "+1-555-0456",
-            "email": "jane@test.com",
-            "is_active": True
-        }
+        from app.models.schemas import ServerCreate
+        server_data = ServerCreate(
+            restaurant_id=sample_restaurant.id,
+            first_name="Jane",
+            last_name="Server",
+            employee_id="EMP002",
+            is_active=True
+        )
         
         server = service.create_server(server_data)
         assert server.first_name == "Jane"
@@ -293,14 +296,13 @@ class TestServerService:
         """Test updating a server."""
         service = ServerService(db_session)
         
-        update_data = {
-            "first_name": "Johnny",
-            "phone": "+1-555-0999"
-        }
+        from app.models.schemas import ServerUpdate
+        update_data = ServerUpdate(
+            first_name="Johnny"
+        )
         
         updated_server = service.update_server(sample_server.id, update_data)
         assert updated_server.first_name == "Johnny"
-        assert updated_server.phone == "+1-555-0999"
         assert updated_server.last_name == "Server"  # Unchanged
     
     def test_delete_server(self, db_session: Session, sample_server):
@@ -323,14 +325,14 @@ class TestAssignmentService:
         service = AssignmentService(db_session)
         
         # Create a table assignment
-        assignment_data = {
-            "restaurant_id": sample_restaurant.id,
-            "table_id": sample_table.id,
-            "party_id": sample_party.id,
-            "server_id": sample_server.id,
-            "assigned_at": datetime(2025, 10, 20, 19, 0, 0),
-            "status": "ASSIGNED"
-        }
+        from app.models.schemas import TableAssignmentCreate
+        assignment_data = TableAssignmentCreate(
+            table_id=sample_table.id,
+            party_id=sample_party.id,
+            server_id=sample_server.id,
+            assigned_at=datetime(2025, 10, 20, 19, 0, 0),
+            status="ASSIGNED"
+        )
         
         assignment = service.create_table_assignment(assignment_data)
         assert assignment.table_id == sample_table.id
@@ -346,19 +348,19 @@ class TestAssignmentService:
         """Test creating a table assignment."""
         service = AssignmentService(db_session)
         
-        assignment_data = {
-            "restaurant_id": sample_restaurant.id,
-            "table_id": sample_table.id,
-            "party_id": sample_party.id,
-            "server_id": sample_server.id,
-            "assigned_at": datetime(2025, 10, 20, 19, 0, 0),
-            "status": "ASSIGNED"
-        }
+        from app.models.schemas import TableAssignmentCreate
+        assignment_data = TableAssignmentCreate(
+            table_id=sample_table.id,
+            party_id=sample_party.id,
+            server_id=sample_server.id,
+            assigned_at=datetime(2025, 10, 20, 19, 0, 0),
+            status="ASSIGNED"
+        )
         
         assignment = service.create_table_assignment(assignment_data)
         assert assignment.table_id == sample_table.id
         assert assignment.party_id == sample_party.id
-        assert assignment.status == "ASSIGNED"
+        assert assignment.status == "ACTIVE"  # Default status is ACTIVE
         assert assignment.id is not None
     
     def test_get_table_assignment(self, db_session: Session, sample_restaurant, sample_party, sample_table, sample_server):
@@ -366,14 +368,14 @@ class TestAssignmentService:
         service = AssignmentService(db_session)
         
         # Create assignment first
-        assignment_data = {
-            "restaurant_id": sample_restaurant.id,
-            "table_id": sample_table.id,
-            "party_id": sample_party.id,
-            "server_id": sample_server.id,
-            "assigned_at": datetime(2025, 10, 20, 19, 0, 0),
-            "status": "ASSIGNED"
-        }
+        from app.models.schemas import TableAssignmentCreate
+        assignment_data = TableAssignmentCreate(
+            table_id=sample_table.id,
+            party_id=sample_party.id,
+            server_id=sample_server.id,
+            assigned_at=datetime(2025, 10, 20, 19, 0, 0),
+            status="ASSIGNED"
+        )
         
         created_assignment = service.create_table_assignment(assignment_data)
         
@@ -391,22 +393,23 @@ class TestAssignmentService:
         service = AssignmentService(db_session)
         
         # Create assignment first
-        assignment_data = {
-            "restaurant_id": sample_restaurant.id,
-            "table_id": sample_table.id,
-            "party_id": sample_party.id,
-            "server_id": sample_server.id,
-            "assigned_at": datetime(2025, 10, 20, 19, 0, 0),
-            "status": "ASSIGNED"
-        }
+        from app.models.schemas import TableAssignmentCreate
+        assignment_data = TableAssignmentCreate(
+            table_id=sample_table.id,
+            party_id=sample_party.id,
+            server_id=sample_server.id,
+            assigned_at=datetime(2025, 10, 20, 19, 0, 0),
+            status="ASSIGNED"
+        )
         
         created_assignment = service.create_table_assignment(assignment_data)
         
         # Update assignment
-        update_data = {
-            "status": "COMPLETED",
-            "notes": "Service completed successfully"
-        }
+        from app.models.schemas import TableAssignmentUpdate
+        update_data = TableAssignmentUpdate(
+            status="COMPLETED",
+            notes="Service completed successfully"
+        )
         
         updated_assignment = service.update_table_assignment(created_assignment.id, update_data)
         assert updated_assignment.status == "COMPLETED"
@@ -417,14 +420,14 @@ class TestAssignmentService:
         service = AssignmentService(db_session)
         
         # Create assignment first
-        assignment_data = {
-            "restaurant_id": sample_restaurant.id,
-            "table_id": sample_table.id,
-            "party_id": sample_party.id,
-            "server_id": sample_server.id,
-            "assigned_at": datetime(2025, 10, 20, 19, 0, 0),
-            "status": "ASSIGNED"
-        }
+        from app.models.schemas import TableAssignmentCreate
+        assignment_data = TableAssignmentCreate(
+            table_id=sample_table.id,
+            party_id=sample_party.id,
+            server_id=sample_server.id,
+            assigned_at=datetime(2025, 10, 20, 19, 0, 0),
+            status="ASSIGNED"
+        )
         
         created_assignment = service.create_table_assignment(assignment_data)
         

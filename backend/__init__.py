@@ -1,1 +1,1 @@
-# Restaurant Seating System Backend
+# Backend package

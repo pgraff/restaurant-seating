@@ -1,0 +1,37 @@
+"""
+Setup script for the restaurant seating system
+"""
+from setuptools import setup, find_packages
+
+setup(
+    name="restaurant-seating",
+    version="0.1.0",
+    packages=find_packages(),
+    install_requires=[
+        "fastapi==0.104.1",
+        "uvicorn[standard]==0.24.0",
+        "pydantic==2.5.0",
+        "pydantic-settings==2.1.0",
+        "email-validator==2.1.0",
+        "sqlalchemy==2.0.23",
+        "alembic==1.13.1",
+        "pymysql==1.1.0",
+        "cryptography==41.0.7",
+        "python-jose[cryptography]==3.3.0",
+        "passlib[bcrypt]==1.7.4",
+        "python-multipart==0.0.6",
+        "httpx==0.25.2",
+        "requests==2.31.0",
+    ],
+    extras_require={
+        "dev": [
+            "pytest==7.4.3",
+            "pytest-asyncio==0.21.1",
+            "pytest-cov==4.1.0",
+            "black==23.11.0",
+            "isort==5.12.0",
+            "flake8==6.1.0",
+            "mypy==1.7.1",
+        ]
+    }
+)
